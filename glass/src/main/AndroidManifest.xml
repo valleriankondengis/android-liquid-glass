@@ -1,0 +1,3 @@
+<!-- Library manifest: empty on purpose; the library declares no components. -->
+
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" />

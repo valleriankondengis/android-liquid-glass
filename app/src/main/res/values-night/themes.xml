@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark platform theme: all visual theming happens in Compose (GlassTheme). -->
+    <style name="Theme.Glass" parent="android:Theme.Material.NoActionBar" />
+</resources>

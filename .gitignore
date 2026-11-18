@@ -1,0 +1,14 @@
+# Gradle, IDE, and build outputs - nothing here is committed.
+
+*.iml
+.gradle
+/local.properties
+/.idea
+/.cxx
+.DS_Store
+build/
+/captures
+.externalNativeBuild
+local.properties
+*.apk
+*.aab
