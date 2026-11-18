@@ -53,10 +53,6 @@ fun glassBarStyle(darkTheme: Boolean): GlassStyle = GlassStyle(
     // Highlight and drop shadow keep their defaults, as on the bar.
 )
 
-/** Accent blue used for selected menu rows. */
-internal fun glassMenuAccentColor(darkTheme: Boolean): Color =
-    if (darkTheme) Color(0xFF0091FF) else Color(0xFF0088FF)
-
 /**
  * The fixed modal material shared by the dialog and the bottom sheet: 12 dp
  * blur, a 16/32 dp lens, vibrancy on, and a heavy flat surface tint (white

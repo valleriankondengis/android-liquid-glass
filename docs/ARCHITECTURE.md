@@ -109,8 +109,9 @@ both.
 
 A wrapped backdrop scales one source about the sampling surface's
 center, independently of the other sources: a slider track collapsing
-vertically as the thumb is pressed, a segmented track magnifying at
-rest, a tab row shrinking inside the bottom-bar droplet. The wrap scale
+vertically as the thumb is pressed, a segmented track shrinking as it
+is pressed, a tab row shrinking inside the bottom-bar droplet. The wrap
+scale
 is a draw-phase provider, so animation state inside it invalidates the
 draw only.
 
@@ -164,8 +165,7 @@ source only.
 `sampleScale` magnifies the sampled content around the surface center
 (1 = no magnification): sources are drawn scaled by the value about the
 center when the glass layer is recorded, so each surface pixel samples a
-smaller backdrop region. It is how the segmented control magnifies its
-track at rest.
+smaller backdrop region.
 
 ## Effect chain
 

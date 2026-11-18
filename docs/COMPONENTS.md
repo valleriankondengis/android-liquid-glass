@@ -302,10 +302,13 @@ fun GlassSegmentedControl(
 )
 ```
 
-48 dp segmented control with a sliding droplet. The track magnifies at
-rest (1.3x) and the droplet stretches with drag velocity. Labels are
-15 sp semibold, fading to 0.75 alpha when unselected. `contentColor`
-`Unspecified` resolves to the theme label color.
+32 dp segmented control: 2 dp padding, 4 dp gaps, and a flat 28 dp
+selected button with 20 dp corners at rest. Labels are 13.33 sp with
+18 sp line height, semibold when selected and medium otherwise. While
+pressed, the liquid droplet grows taller, slides, and stretches with
+drag velocity,
+the labels fade with distance, and the sampled track shrinks to 0.9x.
+`contentColor` `Unspecified` resolves to the theme label color.
 
 ## Sliders, selectors, stepper
 
@@ -480,8 +483,10 @@ fun Modifier.glassMenuAnchor(onBounds: (IntRect) -> Unit): Modifier
 Popup menu that grows out of a droplet at the anchor's edge. Apply
 `glassMenuAnchor` to the composable the menu opens from; the menu does
 nothing until the bounds are non-zero. Width clamps to 180..280 dp.
-Rows are 44 dp with optional dividers. The menu renders in the overlay
-host, not in a dialog window.
+Panel padding is 10 dp vertical and 16 dp horizontal; rows are 40 dp
+with 1 dp dividers in 21 dp frames. A selected row shows a leading
+checkmark. The menu renders in the overlay host, not in a dialog
+window.
 
 ### GlassDialog
 
@@ -504,11 +509,15 @@ fun GlassDialog(
 )
 ```
 
-270 dp modal dialog with stacked 44 dp buttons and hairline dividers.
-Cancel first (regular), confirm second (semibold). `destructive` colors
-the confirm action system red. `confirmColor` / `cancelColor` override
-the button text colors; `Unspecified` keeps the default behavior. Squish
-enter animation, scrim at 42% black.
+300 dp modal dialog with 34 dp corners and 48 dp pill buttons, no
+dividers. Title 17 sp semibold, message 17 sp regular, both left
+aligned in the primary label color. Two actions sit side by side:
+cancel (secondary fill) left, confirm (blue fill, white label) right;
+one action is a single full-width pill. `destructive` keeps the
+secondary fill for the confirm pill and colors its label system red.
+`confirmColor` / `cancelColor` override the button label colors;
+`Unspecified` keeps the default behavior. Squish enter animation,
+scrim at 42% black.
 
 ### GlassBottomSheet
 
@@ -524,9 +533,11 @@ fun GlassBottomSheet(
 )
 ```
 
-Full-width sheet with 34 dp top corners, square bottom corners, a
-grabber, and a centered title. Slides up with a squish pivot at the
-bottom center. No drag-to-dismiss: dismiss on scrim tap or back press.
+Full-width sheet with 34 dp top corners and square bottom corners,
+touching the bottom and side edges, a grabber, and a centered 17 sp
+regular title in a 44 dp row. Scrim at 20% black. Slides up with a
+squish pivot at the bottom center. No drag-to-dismiss and no toolbar
+buttons: dismiss on scrim tap or back press.
 
 ## Progress and search
 

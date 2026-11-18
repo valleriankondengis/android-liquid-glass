@@ -144,7 +144,7 @@ private fun SheetContent(onDismiss: () -> Unit) {
     ) {
         listOf("Sheet 1", "Sheet 2", "Sheet 3", "Sheet 4").forEachIndexed { index, label ->
             if (index > 0) {
-                RowDivider(color = appSeparatorColor(darkTheme))
+                RowDivider(color = appSeparatorColor(darkTheme), symmetricInset = true)
             }
             TextRow(
                 label = label,

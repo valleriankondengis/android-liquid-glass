@@ -28,7 +28,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onSizeChanged
@@ -44,20 +46,22 @@ import kotlin.math.roundToInt
 
 /**
  * A bottom sheet: a full-width glass panel with 34 dp top corners and
- * square bottom corners, using the fixed modal material (12 dp blur,
- * 16/32 dp lens, vibrancy, heavy surface tint).
+ * square bottom corners, touching the bottom and side edges with no
+ * bottom margin, using the fixed modal material (12 dp blur, 16/32 dp
+ * lens, vibrancy, heavy surface tint).
  *
- * Layout, top to bottom: a centered 36 x 5 dp grabber pill (10 dp top /
- * 8 dp bottom padding), a centered 17 sp semibold title, a 12 dp gap, the
- * caller [content], and 24 dp of bottom padding.
+ * Layout, top to bottom: a centered 36 x 5 dp grabber pill (5 dp top /
+ * 6 dp bottom padding), a centered 17 sp regular title with 22 sp
+ * line height in a 44 dp row, a 10 dp gap, the caller [content], and
+ * 24 dp of bottom padding. The scrim is black at 20%.
  *
  * The sheet slides up from fully below the screen with a spring (enter
  * damping 0.82, medium-low stiffness; exit damping 0.9, medium stiffness),
  * plus a vertical squish from scaleY 0.88 (spring damping 0.54 /
  * stiffness 420 on enter, 160 ms tween on exit) pivoted at the bottom
- * center, and a 180 ms alpha fade. There is no drag-to-dismiss gesture;
- * taps inside the sheet are swallowed, and dismissal is by scrim tap,
- * back press, or the caller's own rows.
+ * center, and a 180 ms alpha fade. There is no drag-to-dismiss gesture
+ * and no toolbar buttons; taps inside the sheet are swallowed, and
+ * dismissal is by scrim tap, back press, or the caller's own rows.
  *
  * The sheet must be placed where it can fill the screen (at the root of
  * the screen composition): it draws its own scrim overlay. The backdrop
@@ -75,6 +79,8 @@ fun GlassBottomSheet(
 ) {
     val darkTheme = isSystemInDarkTheme()
     val labelColor = glassLabelColor(darkTheme)
+    // Grabber: the tertiary label color at 30% in both modes.
+    val grabberColor = (if (darkTheme) Color(0xFFEBEBF5) else Color(0xFF3C3C43)).copy(alpha = 0.30f)
 
     val slide by animateFloatAsState(
         targetValue = if (visible) 0f else 1f,
@@ -96,11 +102,18 @@ fun GlassBottomSheet(
         label = "glassSheetAlpha",
     )
     var sheetHeightPx by remember { mutableIntStateOf(0) }
+    val sheetShape = RoundedCornerShape(
+        topStart = 34.dp,
+        topEnd = 34.dp,
+        bottomStart = 0.dp,
+        bottomEnd = 0.dp,
+    )
 
     GlassModalOverlay(
         visible = visible,
         onDismissRequest = onDismissRequest,
         modifier = modifier,
+        scrimTargetAlpha = 0.20f,
     ) {
         GlassSurface(
             backdrop = backdrop,
@@ -119,39 +132,41 @@ fun GlassBottomSheet(
                     indication = null,
                 ) { /* Swallow taps so they never reach the scrim. */ },
             style = glassModalStyle(darkTheme),
-            shape = RoundedCornerShape(
-                topStart = 34.dp,
-                topEnd = 34.dp,
-                bottomStart = 0.dp,
-                bottomEnd = 0.dp,
-            ),
+            shape = sheetShape,
             // The vertical squish, reported so sampling inverts it and the
             // backdrop stays aligned while the sheet squishes in. The
             // inverse holds for the bottom-center pivot too.
             layerScale = { Offset(1f, squishY) },
         ) {
-            Column(modifier = Modifier.fillMaxWidth()) {
+            // Clip the content to the sheet shape so nothing draws
+            // past the rounded corners.
+            Column(modifier = Modifier.fillMaxWidth().clip(sheetShape)) {
                 Box(
                     modifier = Modifier
-                        .padding(top = 10.dp, bottom = 8.dp)
+                        .padding(top = 5.dp, bottom = 6.dp)
                         .size(width = 36.dp, height = 5.dp)
                         .background(
-                            color = labelColor.copy(alpha = 0.25f),
+                            color = grabberColor,
                             shape = RoundedCornerShape(50),
                         )
                         .align(Alignment.CenterHorizontally),
                 )
-                BasicText(
-                    text = title,
-                    style = TextStyle(
-                        color = labelColor,
-                        fontSize = 17.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        textAlign = TextAlign.Center,
-                    ),
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Spacer(modifier = Modifier.height(12.dp))
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(44.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    BasicText(
+                        text = title,
+                        style = TextStyle(
+                            color = labelColor,
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Normal,
+                            lineHeight = 22.sp,
+                            textAlign = TextAlign.Center,
+                        ),
+                    )
+                }
+                Spacer(modifier = Modifier.height(10.dp))
                 content()
                 Spacer(modifier = Modifier.height(24.dp))
             }

@@ -1,5 +1,5 @@
 // GlassSegmentedControl: a segmented control with a liquid droplet
-// that slides, stretches, and magnifies the track beneath it.
+// that slides and stretches while pressed, over a flat track at rest.
 
 package com.vallxz.glass.components
 
@@ -7,6 +7,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
@@ -34,6 +35,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.util.lerp
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -72,17 +74,21 @@ import kotlin.math.exp
 import kotlin.math.roundToInt
 
 /**
- * A glass segmented control: a 48 dp capsule track with a magnifying glass
- * droplet that slides between segments.
+ * A glass segmented control: a 32 dp capsule track with 2 dp padding and
+ * 4 dp gaps between segments. At rest the selected segment is a flat
+ * 28 dp button with 20 dp corners, and the labels are 13.33 sp with
+ * 18 sp line height - semibold when selected, medium otherwise.
  *
- * Hold and drag anywhere on the control: the droplet follows the finger on
- * a spring, stretches with its speed, and rubber-bands past the ends (at
- * most 5 dp, with exponential resistance). Releasing snaps to the nearest
- * segment. A tap animates the droplet to the tapped segment. Labels fade
- * toward 75% alpha with distance from the droplet center, and the droplet
- * magnifies the track 1.3x through its lens at rest, shrinking it to 0.9x
- * while pressed, while the labels and the outer backdrop stay at their
- * natural size.
+ * Hold and drag anywhere on the control: the liquid droplet follows the
+ * finger on a spring, stretches with its speed, and rubber-bands past
+ * the ends (at most 5 dp, with exponential resistance). Releasing snaps
+ * to the nearest segment. A tap animates the droplet to the tapped
+ * segment. While pressed, the droplet grows taller, its lens refracts,
+ * its shadow and highlight fade in, the labels fade toward 75% alpha
+ * with distance from the droplet center, and the sampled track
+ * shrinks to 0.9x; at rest the lens, shadow, and highlight are gone,
+ * the labels sit at full alpha, and the track samples at its natural
+ * size.
  *
  * The droplet samples a merged backdrop - the outer backdrop, the
  * control's recorded track layer (track plus resting thumb) sampled
@@ -124,12 +130,13 @@ fun GlassSegmentedControl(
     val labelsBackdrop = rememberGlassBackdrop()
     val trackBackdrop = rememberGlassBackdrop()
     val outerBackdrop = LocalGlassBackdrop.current ?: backdrop
-    // The track layer is sampled scaled by the press: magnified 1.3x at
-    // rest, shrinking to 0.9x at full press, about the droplet center.
-    // The scale is evaluated in the draw phase, and it applies to the
-    // track layer only - the labels and the outer backdrop are unscaled.
+    // The track layer is sampled scaled by the press: at its natural
+    // size at rest, shrinking to 0.9x at full press, about the droplet
+    // center. The scale is evaluated in the draw phase, and it applies
+    // to the track layer only - the labels and the outer backdrop are
+    // unscaled.
     val wrappedTrackBackdrop = rememberGlassWrappedBackdrop(trackBackdrop) {
-        val scale = lerp(1.3f, 0.9f, motion.pressProgress.value)
+        val scale = lerp(1f, 0.9f, motion.pressProgress.value)
         Offset(scale, scale)
     }
     val innerMergedBackdrop = rememberGlassMergedBackdrop(wrappedTrackBackdrop, labelsBackdrop)
@@ -149,14 +156,14 @@ fun GlassSegmentedControl(
     }
 
     val trackColor = if (darkTheme) {
-        Color(0xFF787880).copy(alpha = 0.36f)
+        Color(0xFF767680).copy(alpha = 0.24f)
     } else {
-        Color(0xFF787880).copy(alpha = 0.16f)
+        Color(0xFF767680).copy(alpha = 0.12f)
     }
     val restingThumbColor = if (darkTheme) {
-        Color.White.copy(alpha = 0.20f)
+        Color.White.copy(alpha = 0.27f)
     } else {
-        Color.White.copy(alpha = 0.92f)
+        Color.White
     }
 
     var dragValue by remember { mutableFloatStateOf(selectedCoerced.toFloat()) }
@@ -175,15 +182,17 @@ fun GlassSegmentedControl(
     BoxWithConstraints(
         modifier = modifier
             .fillMaxWidth()
-            .height(48.dp)
+            .height(32.dp)
             .graphicsLayer { alpha = if (enabled) 1f else 0.5f },
         contentAlignment = Alignment.CenterStart,
     ) {
         val widthPx = constraints.maxWidth.toFloat()
         val insetPx = with(density) { 2.dp.toPx() }
-        val segmentWidthPx = (widthPx - insetPx * 2f) / count
-        val dropletHeightPx = with(density) { 48.dp.toPx() }
-        val maxDropletWidthPx = with(density) { (2.2f * 48f).dp.toPx() }
+        val gapPx = with(density) { 4.dp.toPx() }
+        val segmentWidthPx = (widthPx - insetPx * 2f - gapPx * (count - 1)) / count
+        val pitchPx = segmentWidthPx + gapPx
+        val dropletHeightPx = with(density) { 28.dp.toPx() }
+        val maxDropletWidthPx = with(density) { (2.2f * 28f).dp.toPx() }
         val dropletWidthPx = segmentWidthPx.coerceIn(
             minOf(dropletHeightPx, segmentWidthPx),
             maxDropletWidthPx,
@@ -191,9 +200,9 @@ fun GlassSegmentedControl(
 
         fun dropletX(index: Float): Float {
             val slotX = if (layoutDirection == LayoutDirection.Ltr) {
-                insetPx + index * segmentWidthPx
+                insetPx + index * pitchPx
             } else {
-                widthPx - insetPx - (index + 1f) * segmentWidthPx
+                widthPx - insetPx - index * pitchPx - segmentWidthPx
             }
             return slotX + (segmentWidthPx - dropletWidthPx) / 2f
         }
@@ -208,9 +217,7 @@ fun GlassSegmentedControl(
         ) {
             Box(
                 modifier = Modifier
-                    .padding(horizontal = 2.dp)
-                    .fillMaxWidth()
-                    .height(36.dp)
+                    .fillMaxSize()
                     .background(trackColor, RoundedCornerShape(50)),
             )
             Box(
@@ -224,20 +231,21 @@ fun GlassSegmentedControl(
                     }
                     .size(
                         with(density) { dropletWidthPx.toDp() },
-                        48.dp,
+                        28.dp,
                     )
-                    .background(restingThumbColor, RoundedCornerShape(50))
+                    .background(restingThumbColor, RoundedCornerShape(20.dp))
                     .graphicsLayer { alpha = 1f - motion.pressProgress.value },
             )
         }
 
         // Labels: drawn normally and recorded in their own layer, so the
-        // droplet samples them unscaled while the track magnifies.
+        // droplet samples them unscaled while the track scales by press.
         Row(
             modifier = Modifier
                 .matchParentSize()
                 .glassBackdrop(labelsBackdrop)
                 .padding(horizontal = 2.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
         ) {
                 options.forEachIndexed { index, label ->
                     Box(
@@ -258,14 +266,16 @@ fun GlassSegmentedControl(
                                     true
                                 }
                             }
-                            .padding(horizontal = 8.dp)
+                            .padding(horizontal = 6.dp)
                             .graphicsLayer {
                                 // Label fade toward 75% alpha with distance
-                                // from the droplet center, read here in the
-                                // draw phase so the labels never recompose
-                                // on animation ticks.
+                                // from the droplet center, only while
+                                // pressed: at rest every label sits at full
+                                // alpha. Read here in the draw phase so the
+                                // labels never recompose on animation ticks.
                                 val distance = abs(index - motion.value.value).coerceIn(0f, 1f)
-                                alpha = lerp(1f, 0.75f, distance)
+                                val pressedAlpha = lerp(1f, 0.75f, distance)
+                                alpha = lerp(1f, pressedAlpha, motion.pressProgress.value)
                             },
                         contentAlignment = Alignment.Center,
                     ) {
@@ -273,8 +283,14 @@ fun GlassSegmentedControl(
                             text = label,
                             style = TextStyle(
                                 color = resolvedContentColor,
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 13.33.sp,
+                                fontWeight = if (index == currentSelected) {
+                                    FontWeight.SemiBold
+                                } else {
+                                    FontWeight.Medium
+                                },
+                                lineHeight = 18.sp,
+                                letterSpacing = (-0.08).sp,
                                 textAlign = TextAlign.Center,
                             ),
                             maxLines = 1,
@@ -284,15 +300,14 @@ fun GlassSegmentedControl(
                 }
         }
 
-        val halfMinPx = minOf(dropletWidthPx, dropletHeightPx) / 2f
         SegmentedDroplet(
             motion = motion,
             backdrop = dropletBackdrop,
             dropletX = { index -> dropletX(index) },
             displayedOverdrag = displayedOverdrag,
             dropletWidth = with(density) { dropletWidthPx.toDp() },
-            halfMinPx = halfMinPx,
-            segmentWidthPx = segmentWidthPx,
+            dropletHeight = 28.dp,
+            pitchPx = pitchPx,
             density = density,
         )
 
@@ -312,9 +327,9 @@ fun GlassSegmentedControl(
                 motion.onRelease(snap.toFloat())
             } else {
                 val tapIndex = if (layoutDirection == LayoutDirection.Rtl) {
-                    ((widthPx - downX - insetPx) / segmentWidthPx).toInt()
+                    ((widthPx - downX - insetPx) / pitchPx).toInt()
                 } else {
-                    ((downX - insetPx) / segmentWidthPx).toInt()
+                    ((downX - insetPx) / pitchPx).toInt()
                 }.coerceIn(0, count - 1)
                 if (tapIndex != currentSelected) {
                     if (haptic) haptics.tick()
@@ -328,7 +343,7 @@ fun GlassSegmentedControl(
             Box(
                 modifier = Modifier
                     .matchParentSize()
-                    .pointerInput(segmentWidthPx, count, layoutDirection) {
+                    .pointerInput(pitchPx, count, layoutDirection) {
                         detectGlassDrag(
                             onDragStart = { down ->
                                 downX = down.x
@@ -348,9 +363,9 @@ fun GlassSegmentedControl(
                                     } else {
                                         delta.x
                                     }
-                                    dragValue += signed / segmentWidthPx
+                                    dragValue += signed / pitchPx
                                     val clamped = dragValue.coerceIn(0f, (count - 1).toFloat())
-                                    val excessPx = (dragValue - clamped) * segmentWidthPx
+                                    val excessPx = (dragValue - clamped) * pitchPx
                                     val maxOverdragPx = 5f * density.density
                                     overdragPx = if (excessPx == 0f) {
                                         0f
@@ -388,8 +403,8 @@ private fun SegmentedDroplet(
     dropletX: (Float) -> Float,
     displayedOverdrag: Float,
     dropletWidth: Dp,
-    halfMinPx: Float,
-    segmentWidthPx: Float,
+    dropletHeight: Dp,
+    pitchPx: Float,
     density: Density,
 ) {
     // The droplet's visible scale, speed and overdrag stretch included.
@@ -400,7 +415,7 @@ private fun SegmentedDroplet(
     // the droplet stretches instead of doubling.
     fun dropletScale(): Offset {
         val velocityDpPerSec = abs(motion.velocity.value) * motion.span *
-            segmentWidthPx / density.density
+            pitchPx / density.density
         val stretch = (velocityDpPerSec / 1600f).coerceIn(0f, 1f)
         val overdragFactor = (abs(displayedOverdrag) / with(density) { 5.dp.toPx() })
             .coerceIn(0f, 1f)
@@ -415,7 +430,24 @@ private fun SegmentedDroplet(
             .offset {
                 IntOffset((dropletX(motion.value.value) + displayedOverdrag).roundToInt(), 0)
             }
-            .size(dropletWidth, 48.dp)
+            .size(dropletWidth, dropletHeight)
+            .layout { measurable, constraints ->
+                // The droplet is drawn taller while pressed, from its
+                // resting height to 48 dp at full press. Growing the
+                // drawn height keeps the capsule corners circular at
+                // every press value, where scaling a short pill taller
+                // would stretch them. Read in the layout phase, so
+                // press ticks relayout, never recompose.
+                val heightPx = lerp(
+                    with(density) { dropletHeight.toPx() },
+                    with(density) { 48.dp.toPx() },
+                    motion.pressProgress.value,
+                ).roundToInt()
+                val placeable = measurable.measure(
+                    constraints.copy(minHeight = heightPx, maxHeight = heightPx),
+                )
+                layout(placeable.width, placeable.height) { placeable.place(0, 0) }
+            }
             .graphicsLayer {
                 // Speed stretch from the droplet velocity, plus overdrag
                 // stretch. Read here, in the draw phase.
@@ -427,6 +459,14 @@ private fun SegmentedDroplet(
             // Evaluated in the draw phase, so press ticks invalidate the
             // draw only instead of recomposing the droplet.
             val press = motion.pressProgress.value
+            // The lens follows the drawn height, so the refraction at
+            // full press matches the previous 48 dp droplet.
+            val drawnHeightPx = lerp(
+                with(density) { dropletHeight.toPx() },
+                with(density) { 48.dp.toPx() },
+                press,
+            )
+            val halfMinPx = minOf(with(density) { dropletWidth.toPx() }, drawnHeightPx) / 2f
             GlassStyle(
             blurRadius = 0.dp,
             refractionHeight = with(density) { (halfMinPx * 0.58f * press).toDp() },
@@ -434,12 +474,15 @@ private fun SegmentedDroplet(
             saturation = 1f,
             depth = true,
             chromaticAberration = 0.8f,
-            highlight = GlassHighlight(),
-            shadow = GlassShadow(alpha = lerp(0.6f, 1f, press)),
+            // The highlight, shadow, and inner shadow fade in with the
+            // press: at rest the droplet adds nothing over the flat
+            // selected button beneath it.
+            highlight = GlassHighlight(alpha = press),
+            shadow = GlassShadow(alpha = press),
             innerShadow = GlassInnerShadow(
                 radius = (8f * lerp(0.75f, 1f, press)).dp,
                 offset = DpOffset(0.dp, (8f * lerp(0.75f, 1f, press)).dp),
-                alpha = lerp(0.6f, 1f, press),
+                alpha = press,
             ),
             )
         },

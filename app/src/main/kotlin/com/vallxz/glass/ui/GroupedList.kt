@@ -107,13 +107,16 @@ fun GroupCard(
     }
 }
 
-/** A 0.5 dp divider between group rows, with a 20 dp leading inset unless [showLeadingInset] is false. */
+/** A 0.5 dp divider between group rows, with a 20 dp leading inset unless [showLeadingInset] is false. Pass [symmetricInset] for an equal 20 dp trailing inset, so the line stops short of both edges. */
 @Composable
-fun RowDivider(color: Color, showLeadingInset: Boolean = true) {
+fun RowDivider(color: Color, showLeadingInset: Boolean = true, symmetricInset: Boolean = false) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = if (showLeadingInset) 20.dp else 0.dp)
+            .padding(
+                start = if (showLeadingInset) 20.dp else 0.dp,
+                end = if (symmetricInset) 20.dp else 0.dp,
+            )
             .height(0.5.dp)
             .background(color),
     )
